@@ -1,0 +1,19 @@
+---
+
+version: "3.7"
+
+services:
+  solr:
+    #working_dir: /app
+    working_dir: /opt/solr
+    user: "0:0"
+    image: solr:6.6.6-slim # bin/solr start -e techproducts -h 0.0.0.0
+    #image: solr-sample
+    #    build:
+    #      context: .
+    #      dockerfile: ./dockerfiles/Dockerfile.solr
+    #      #target: solr-server
+    ports:
+      - 8983:8983
+    volumes:
+      - ./:/app
