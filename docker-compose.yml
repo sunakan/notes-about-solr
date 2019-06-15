@@ -17,3 +17,4 @@ services:
       - 8983:8983
     volumes:
       - ./:/app
+      - ./solr_home:/opt/solr/server/solr
