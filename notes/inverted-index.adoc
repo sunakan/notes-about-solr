@@ -1,0 +1,5 @@
+= 転置インデックス(Inverted index)
+
+* 「順次検索」方式
+** grep, RDBのLIKE検索
+* 「転置インデックス」
