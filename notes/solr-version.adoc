@@ -1,0 +1,58 @@
+= Solr 4 => 5 => 6 => 7 => 8 => 9
+
+== 4
+* Similarity
+* Finite State Automata/Transducer
+* Codec
+* NRT(Near Real Time search)
+* Realtime-get
+* PivotFacet
+* Join
+* SolrCloud
+** 従来は複数台へのインデクシングを実装する必要があった
+** インデックスを持つSolrサーバがダウンしていたり接続できない場合に、自動フェイルオーバーしたい
+*** 従来はロードバランサを構成しないと分散検索は失敗した
+** Master/Slave環境で設定を一言管理したい
+*** 従来は設定ファイルの管理が煩雑だった
+** リアルタイムインデクシングとリアルタイム検索
+*** 従来はレプリケーションにタイムラグがあった
+** ZooKeeper Integration
+*** Configの中央管理
+*** 自動フェイルオーバー(リーダー選出)
+*** 本番環境はZKアンサンブルを使用
+** 検索時、通常の検索リクエストで、各シャードにリクエストされる
+*** SolrJならCloudSolrServer
+** インデクシング時
+*** 登録リクエストがReplicaに投げられたら、Leaderに投げる。
+*** リクエストがLeaderに投げられたら、ハッシュを計算してどこのシャードに渡すか決める
+*** そのシャードのLeaderに転送する
+*** その後Replicaに転送。インデクシングを行う
+
+== 4と5の違い
+
+* Solr 5.0からは、サーブレットコンテナに対するデプロイに適しているwar形式でのディストリビューションは実施していない。
+* 他のサーブレットコンテナ（または、jetty以外のインスタンス）へのwebappとしてのデプロイはサポートされない。
+* Solr 5 は Lucene/Solr 3.x 以前のインデックスの読み込みをサポートしていない。
+* Solr 5.0 は、（Solr 4.3以前の古い） solr.xml フォーマットに対する全てのサポートを排除した。
+* これまでのバージョンと違い、Solr 5.0 は コレクションAPIを経由した、SolrCloud コレクションの作成または削除のみ、サポートする。
+* Solr 4.10で非推奨となった、多数のSolrJ メソッドが削除された。
+* javaのバグがあるため、Apache Solr 4.8 以降は、Java 7u55以上が推奨。
+
+== 5と6の違い
+* Java 8以上
+* Solr 4以前のインデックスを使用したい場合はSolr5.5に含まれるLucene IndexUpgraderを利用しないといいけない
+* Managed Schemaがデフォルトになる
+* schema.xmlは使わない
+* Schema設定はSchema APIを使う
+* もし、従来のschema.xmlを使う場合はsolrconfig.xmlに以下を記述
++
+----
+<schemaFactory class="ClassicIndexSchemaFactory">
+----
+
+* schema.xmlからManagedSchemaへの移行は簡単
+** conf内のmanaged-schemaファイルを削除 & 作成済みschema.xmlをconfに配置後、Solrを起動
+** 以下の記述が入ったmanaged-schemaファイルが新たに作成され、配置したschema.xmlはschema.xml.bakにリネームされる
+** Parallel SQL
+*** SolrでSQLが使用可能に
+*** 現在はSolr CLoudのみ使用可
