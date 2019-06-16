@@ -3,9 +3,10 @@
 version: "3.7"
 
 services:
-  solr:
-    working_dir: /opt/solr
+  node-1: &solr
+    working_dir: /opt/solr #${SOLR}
     user: "0:0"
+    image: my-solr6
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -13,3 +14,12 @@ services:
       - 8983:8983
     volumes:
       - ./:/app
+
+  node-2:
+    <<: *solr
+    ports:
+      - 8985:8983
+
+networks:
+  default:
+    name: my-solr-network
