@@ -1,0 +1,346 @@
+= Note about SolrCloud
+
+=== まとめ
+
+* SolrCloudは、高信頼性、耐障害性、拡張性を運用コストを抑えつつ実現するSolrのクラスタリングの仕組み
+* SolrCloudを利用するには、4.0以上?(5.0という情報も)に上げる必要がある
+* SPOFをゼロにしようとした場合は、Solrサーバー 2台とzookeeperサーバー3台の合計5台が最低限必要
+* SolrCloudでは、サーバを追加すると何も指定しなくても（勝手に）レプリケーションが行われます。
+
+==== link:http://blog.seamark.co.jp/archives/415[Solr Cloudを動かしてみる]
+
+----
+Solrバージョン5からはSolr Cloud機能が実装され、
+検索「エンジン」から検索「システム」へと変貌を遂げてきています。
+----
+
+==== link:https://techblog.zozo.com/entry/solr_cloud[検索システムだって高可用性にしたい！SolrCloudを用いた高可用性構成の紹介]
+
+* 図があってわかりやすい
+
+----
+Solrの構成例は大きくわけて3つ
+* スタンドアローン構成
+* master slave構成
+* SolrCloud構成
+----
+
+----
+SolrCloud構成は基本的にはmaster slave構成と同じですが、より可用性が上がった構成です。
+----
+
+[cols="1,1,1,1", options="autowidth"]
+|===
+||スタンドアロン|Master Slave|SolrCloud
+|必要な台数|1|1+Slave数(X)|X台 + Zookeeper
+|参照系が死ぬ条件|1台しか無いnodeが死んだ時|全Slave nodeがが死んだ時|全nodeが死んだ時
+|更新系が死ぬ条件|1台しか無いnodeが死んだ時|1台しか無いnodeが死んだ時|全nodeが死んだ時
+|===
+
+----
+SolrCloud構成のみが参照系・更新系ともに単一障害点（SPOF）をなくすことのできる構成なことがわかります。
+----
+
+----
+SPOFをゼロにしようとした場合は、Solrサーバー 2台とzookeeperサーバー3台の合計5台が最低限必要
+----
+
+==== link:https://qiita.com/KUMAN/items/37edea29db87704ad8fe[Apache SolrCloudでクラスタ環境構築入門 (クラスタ構築〜分散インデシング〜フェールオーバーまで)]
+
+* 図あり
+
+----
+SolrCloudではZooKeeperを用いてのレプリケーション、フェールオーバー、ノーダーノード自動選出など中央集中管理
+----
+
+==== link:https://www.slideshare.net/kenhirose547/10solr-solr-cloud[第10回 Sol勉強会 SolrCloud導入事例]
+
+* 台数を使ったシステム構成図あり
+
+----
+Solr4.0からの新機能
+zookeeperを使う
+----
+
+----
+• SolrCloudの利点
+• Solrの設定ファイルをコレクション内で一元管理できる
+• 検索/更新クライアントは各コレクション内のnodeを意識しなくてよい
+• コレクション内のnode(レプリカ)を追加しても検索/更新クライアントの変更は不要
+
+• SolrCloud利用時の注意点
+• shardの分割機能はまだないのでコレクション作成時のデータサイズの見積もり に注意
+• shardを増やす場合は合わせてnode数も検討
+• コレクション情報が壊れると検索/更新できなくなる
+
+• 更新処理の必須条件
+• 全shardのleader nodeのステータスがactiveであること
+
+• 検索処理の必須条件
+• 各shardに最低１つのnode(core)が割り当てられていること
+• shardが１つでも欠落するとそのコレクションに対しては検索不可
+• shardsパラメータで検索対象shardを明示的に指定した場合は可能
+• パフォーマンスは素のSolrの方が良い
+----
+
+==== link:http://www.enigmo.co.jp/blog/tech/buyma%E3%81%AE%E5%95%86%E5%93%81%E6%A4%9C%E7%B4%A2%E3%82%92%E6%94%AF%E3%81%88%E3%82%8Bsolrcloud/[BUYMAの商品検索を支えるSolrCloud]
+
+* 構成図あり
+
+----
+SolrCloudは、高信頼性、耐障害性、拡張性を運用コストを抑えつつ実現するSolrのクラスタリングの仕組みです。
+----
+
+----
+更新のしくみですが、Solrを更新するバッチが常に動いていて、DBから更新がかかった商品情報を取得し、leaderのSolrãードへ更新リクエストを送ります。するとSolrCloudの仕組みとして、leaderノードが他のreplicaノードへ更新を伝えて全ノードが更新されます。
+----
+
+----
+検索はRailsのWebサーバーから直接SolrCloud内のSolrノードへリクエストします。特にロードバランサー用のサーバー等は挟まず、SolrノードのIPをランダムに選び、そのIPへリクエストを飛ばすように、Railsアプリ側でロードバランシングしています。
+----
+
+==== link:弊社ではElasticSearch、Solr＋JavaのOSSを活用した検索ソリューションを提供します[http://www.sync-web.jp/description-of-business/search-solution/]
+
+* SolrCloudとElasticSearchの構成図があり、比較がしやすい
+
+----
+検索を担当するスレーブノードの1つがダウンした場合、別のノードを検索するように明示的に設定を変更する必要がある。
+インデキシングを担当するマスターノードのうち1つがダウンした場合、1部のシャードに登録できなくなってしまい、インデックスの整合性が崩れてしまう。
+----
+
+----
+SolrCloudは、そういった運用、管理コストを最小限にすることを目標に新たに考えられた分散環境の仕組みです。
+----
+
+----
+Solrに組み込まれたZooKeeperを使用することにより、Solrノードのステータス管理、分散インデキシング、レプリケーション、分散検索時のフェールオーバー、さらにマスタノードにあたるリーダーノードの自動検出など、SolrCloudにより単一障害点をなくす仕組が取り入れられています。
+----
+
+==== link:https://www.atmarkit.co.jp/ait/articles/1206/22/news142_2.html[管理が困難―分散処理の常識はZooKeeperで変わる (2/3)]
+
+* Zookeeperが使われている技術の3選のうちの1つとして紹介
+* ほかにはKey-ValueストアのDBのHBase, Jubatus
+
+----
+「SolrCloud」は、検索エンジン「Apache Solr」のZookeeperを利用した拡張です。SolrCloudは現在のバージョンのSolrには導入されていませんが、将来のバージョンで利用されるそうです。クラスタの設定ファイルの集中管理などでZooKeeperが使われるそうです。
+----
+
+==== link:Solr で solrcloud による分散検索(Distributed Search)[http://mzi.hatenablog.com/entry/2014/03/10/223827]
+
+----
+Solr 3.0以降はsolrcloudがメインの使い方のようです。
+----
+
+----
+単純なshardingとの違いは、Zookeeperを利用しているということ。
+これにより、検索対象のshardの指定がいらなかったり、設定の配布ができたり、勝手にレプリケーションができたりする。
+----
+
+==== link:https://www.designet.co.jp/faq/term/?id=QXBhY2hlIFNvbHI[Apache Solrとは]
+
+----
+Solr Cloundの設定情報の管理は、Apache Zookeeperを利用して行なう。Apache ZookeeperはApache Solrに同梱されているが、このバージョンではZookeeper自体の冗長性を確保することはできない。Zookeeperの冗長性を確保するには、Zookeeperを別途入手してインストールする必要がある。Zookeeperを冗長化する場合には、最小で3台のサーバが必要となる。各サーバが、互いにデータをレプリケーションして保持することで、冗長化を実現する。
+----
+
+==== link:https://codeday.me/jp/qa/20190418/651164.html[SolrCloudとスタンドアロンSolr]
+
+* コードログ(質問/ベストアンサー式)
+
+----
+クエリ例を複数回実行したときの平均的な結果は、標準のSolrがSolrクラウドよりも5倍高速だったことです。
+----
+
+----
+solrcloudのsolrドキュメンテーションを読み、それがどのようにしてあなたのユースケースを満足させるかどうかをお勧めします。 solrクラウドに「アップグレード」する必要はありませんでした。
+----
+
+==== link:https://doc.support-dreamarts.com/Luxor/V20/Luxor_Ver.2.0_%E9%81%8B%E7%94%A8%E3%82%AC%E3%82%A4%E3%83%89/solrcloud_clusterserver/index.html[Luxor_Ver.2.0_運用ガイド Edition 2]
+
+----
+SolrCloud機能は、Solrの設定ファイルや分散クラスタ情報を管理するコーディネットサービスZooKeeperに基づき、分散インデックス、分散検索、レプリケーションといった分散環境の仕組みを提供しています。
+----
+
+----
+SolrCloudを利用するメリットは下記となります。
+
+Solrの設定ファイルの中央集中管理が実現できる。
+マスタノードにあたるリーダーノードの自動選出仕組みで、自動フェールオーバーが実現できる。
+レプリカを増やすことで同時に処理可能な検索リクエストを増やすことができる。耐障害性の向上が期待できる。
+シャードを増やすことでインデクシングのスループット、データ量の増大に対応し、検索において応答速度の改善が期待できる。
+----
+
+==== link:https://engineer.roomclip.jp/entry/26[RoomClipのSolr構成について]
+
+* メリット・デメリット現実を見てる記事
+* AWSのCloudSearchとの比較がある
+* AWS上にSolrCloudを置く配置図がある
+
+----
+SolrCloud: 実際に本番で運用するには、(当たり前だけど)、SolrCloudやZooKeeperの学習コストが必要な上に、追加でZooKeeperの運用・保守も発生するため、インデックスがクラスタリングしなければならないような規模でないかぎりは、冗長構成として少々ファットで高コスト(な印象)。人と時間を費やせば、フルマネジメントに近い構成は構築できると思うが、今の要件やリソースを踏まえると、現段階では適切ではないと判断。
+
+AWS CloudSearch: フルマネジメントは魅力的だけど、機能が限定的でフィールドタイプやトークナイザーなども限られ、どこまで互換があるのかもわかりづらく、新機能のキャッチアップもできない、など諸々の理由で不採用。 　
+----
+
+==== link:https://mocobeta-backup.tumblr.com/post/34970351067/solrcloud-%E5%88%86%E6%95%A3%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E9%96%A2%E9%80%A3%E3%81%AE%E6%A9%9F%E8%83%BD[SolrCloud 分散システム関連の機能]
+
+----
+あと、（本番で運用する際には）ZooKeeperに関してもある程度知っておく必要があります。
+----
+
+==== link:https://mocobeta-backup.tumblr.com/post/34171929890/solrcloud-1[SolrCloud でのレプリケーション (1)]
+
+* 従来のレプリケーションの記事もついてる
+
+----
+Solr4.0から導入されたSolrCloudは分散検索に加えて待機系への自動レプリケーション機能を備えています。
+----
+
+==== link:https://helpx.adobe.com/jp/experience-manager/6-3/communities/using/solr.html[SRP 用の Solr 設定]
+
+----
+SolrCloud の手順に従い、以下をインストールすることを推奨します。
+
+同じサーバー上の 3 つの SolrCloud ノード
+外部の Apache ZooKeeper
+----
+
+----
+メモリ使用量とガベージコレクションを調整するために、JVM を設定することを推奨します。
+----
+
+==== link:http://johtani.jugem.jp/?eid=31[New SolrCloud Designの翻訳（その１）]
+
+----
+Solrクラウドはクラウドでの検索サービスとしてのSolrを管理、運用するための既存のSolrを拡張するものです。
+----
+
+----
+Cluster：クラスタは1単位として管理されるSolrノードの集合です。クラスタ全体で単一のschema、solrconfigをもたないといけません。
+Node：ひとつのJVMインスタンスで起動しているSolrのこと
+Partition：パーティションはドキュメント集合全体のサブセット（部分集合）のことです。パーティションは部分集合のドキュメントが単一のインデックスに含まれるような形で作られます。
+Shard：パーティションはn（＝replication factorï¼個のノードに保存される必要があります。このn個のノードすべてでひとつのshardです。1つのノードはいくつかのshardの一部にで有る場合があります。
+Leader：各Shardは1つのリーダとなるノードを持っています。パーティションに登録されたドキュメントリーダーからコピーされます
+Replication Factor：クラスタによって保持されるレプリカの最小限の数
+Transaction Log：各ノードによって保持される書き込み処理の追記ログ
+Partition version：これは各shardのリーダーが持っているカウンターで、書き込み処理ごとに増加し、レプリカに送られます。
+Cluster Lock：これはrange（※後述されているハッシュ値の範囲のことか？）->パーティションもしくはパーティション->ノードのマッピングを変更するために取得しなければいけないグローバルなロックのことです。
+----
+
+==== link:http://blog.yoslab.com/entry/2016/12/01/224320[SolrCloud のリカバリー処理]
+
+* 問題に出くわした時の話
+
+----
+1. tlog のリプレイ
+2. PeerSync
+3. レプリケーション
+----
+
+==== link:https://tech.actindi.net/2014/10/20/3622776203[SolrCloud で Solr を冗長化する]
+
+----
+次のような構成で1シェード、2レプリカです。
+
+ap-northeast-1a
+サーバ1
+Solr（レプリカ1）
+ZooKeeper
+ap-northeast-1c
+サーバ2
+Solr（レプリカ2）
+ZooKeeper
+サーバ3
+ZooKeeper
+----
+
+----
+ZooKeeper を指定して Solr を起動するだけで、設定らしい設定をすることなくシェード、 レプリカを増やせる SolrCloud はとてもいいですね。 MySQL のマスター、スレーブ構成とは違い、どの Solr サーバに対しても参照、更新リクエストをなげられるのはとても便利です。
+----
+
+----
+これでいこーよは完全に Multi-AZ 配置になりました。 アベイラビリティゾーンが1つつぶれてもサービスがとまらないということが週末の心のやすらぎに大きく貢献してくれる、 というのが今回の一番大きな発見でした。
+----
+
+==== link:https://www.rondhuit.com/solr_benchmark_2.html[Solr ベンチマーク特集 第2回 インデクシング編]
+
+* 1シャード, 2シャードの比較がある
+
+----
+違いが出やすいように 10 件毎にコミットをする設定としましたが，今回のテストセットだと，10000 万件毎にコミットする場合と比べて 10% ほど悪化することが分かりました。この結果ではインデクシング速度のみ観察し，CPU やメモリの状況は見ていません。今回の測定のように，余りにも短すぎるコミット間隔は Solr への負荷が大きいため，少なくともデフォルト設定以上の値とした方が良いでしょう。リアルタイム性の高いコミットが必要な場合は，ソフトコミットの利用を検討すると良いでしょう。
+----
+
+==== link:https://www.teppi.com/column/ichioku/p005/[シンプルなSolrCloudなら、管理も簡単です]
+
+----
+FileBlogがSolrCloudの環境構築を簡単に実現しているのは、24時間365日データを安全に無停止で運用するというような、「高い要求レベル」をある程度捨てて、簡易構成を基準に設定画面を設計しているためです。
+----
+
+==== link:https://academy.gmocloud.com/know/20160106/1509[apache solrとは？ウェブサイトのスピードアップで売上向上を目指そう]
+
+* ファセット情報がなんなのかを、実際のweb画面で矢印してくれてる図がある
+* Apache Tikaを使うことも説明されている
+
+==== link:http://blog.naoshihoshi.com/entry/2016/01/29/113000[Solr 4.10.4でSolrCloudを試してみました。]
+
+* シャード数2、レプリケーション数2の4台構成のシステムを想定
+
+----
+SolrCloudは、分散インデクシングやレプリケーションのメリットを活かしつつ、
+これらの問題を回避できる分散環境の仕組みを提供します。
+----
+
+----
+具体的にはZooKeeperというものが組み込まれており、それがnodeのステータス管理、分散検索時のフェイルオーバー、単一障害点などをなくす仕組みになっています。
+----
+
+==== link:http://doc.sitecorejp.net/sitecore_experience_platform/80/Setting-up-and-maintaining/search_and_index_configuration/Indexing/Multiple-indexes-sharding?sc_lang=ja-JP[複数のインデックス (シャーディング)]
+
+* シャーディングの説明がある
+* Solrを使う場合と、Luceneを使う場合があるとのこと
+
+----
+ インデックスのシャーディングとは、インデックスの中のドキュメントを小さなパーティションに分割する処理のことです。分割された小さなパーティションはシャードと呼ばれます。すべてのドキュメントをひとつの大きなインデックスに保持する代わりに、シャーディングすることによってドキュメントはシャード間に分散されます。シャーディング処理にはドキュメントをシャードに振り当てるロジック ("sharding strategy") があります。
+----
+
+----
+Solr を使用する場合、Sitecore はシャーディングを処理しません。その代わり、SolrアプリケーションのSolrCloud機能がシャーディングを処理します
+----
+
+----
+Sitecore は完全なフェールオーバーのサポートは行いません。特に、Sitecore (Solr クライアントとして) はカレントのサーバー (leader) がダウンした場合に Solr サーバー (Solr レプリカ) 間の切替えを行うことができません。
+----
+
+==== link:https://ohke.hateblo.jp/entry/2018/11/24/230000[Solrの環境をMacに構築する]
+
+* Macで本のチュートリアルしてる
+
+==== link:https://www.ibm.com/developerworks/jp/java/library/j-solr-lucene/index.html[Apache Lucene および Solr 4 による次世代の検索とアナリティクス]
+
+----
+Lucene と Solr は信頼できるテクノロジーとしてそれぞれの地位 (Lucene は Java API の基盤としての地位、Solr は検索サービスとしての地位) を確立しました。その証拠に、Apple iTunes、Netflix、Wikipedia をはじめとする多数の検索ベースのアプリケーションがこの 2 つのテクノロジーによって駆動されています。
+----
+
+==== link:https://qiita.com/iganari/items/c31d5a253e38184f23e6[Apache Solr Cloudを構築してみる part.1 - 3]
+
+* 途中から本人ブログに移行..?
+
+==== link:https://mocobeta-backup.tumblr.com/post/34235203510/solrcloud-2[SolrCloud でのレプリケーション (2)]
+
+----
+このスライドでやっと理解したことですが、SolrCloudでは、サーバを追加すると何も指定しなくても（勝手に）レプリケーションが行われます。
+----
+
+----
+クラスタ初期化後、なにも考えずにノードを追加していくと
+
+1ノード目 -> Shard 1 (leader)
+2ノード目 -> Shard 2 (leader)
+3ノード目 -> Shard 3 (leader)
+4ノード目 -> Shard 1 (replica)
+5ノード目 -> Shard 2 (replica)
+6ノード目 -> Shard 3 (replica)
+7ノード目 -> Shard 1 (replica)
+…
+といった具合に、ノードは単純に各シャードに順繰りに割り当てられていきます。shardIdを指定して、明示的に所属するシャードを指定することも可能です。replicationFactorパラメータを指定することで、各シャードに割り当てるレプリカ数を制限することもできるようです。
+----
+
