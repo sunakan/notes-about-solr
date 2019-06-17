@@ -1,25 +1,93 @@
----
-
 version: "3.7"
 
-services:
-  node-1: &solr
-    working_dir: /opt/solr #${SOLR}
-    user: "0:0"
-    image: my-solr6
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-    ports:
-      - 8983:8983
-    volumes:
-      - ./:/app
+x-solr-template: &solr
+  working_dir: /app
+  user: "solr"
+  command: bash
+  tty: true
+  image: my-solr6
+  build:
+    context: .
+    dockerfile: ./containers/solr/Dockerfile
+  ports:
+    - 8983
+  volumes:
+    - ./:/app
+  environment:
+    - SOLR=/opt/solr
+  links:
+    - zoo1
+    - zoo2
+    - zoo3
 
-  node-2:
+x-zoo-template: &zoo
+  image: zookeeper:3.4.14
+  restart: always
+
+services:
+  solr1:
     <<: *solr
     ports:
-      - 8985:8983
+      - 8983:8983
 
-networks:
-  default:
-    name: my-solr-network
+  solr2:
+    <<: *solr
+    ports:
+      - 8984:8983
+
+  zoo1:
+    <<: *zoo
+    hostname: zoo1
+    ports:
+      - 2181:2181
+    volumes:
+      - ./tmp/zoo-1/conf:/conf
+      - ./tmp/zoo-1/data:/data
+      - ./tmp/zoo-1/datalog:/datalog
+      - ./tmp/zoo-1/logs:/logs
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+
+  zoo2:
+    <<: *zoo
+    hostname: zoo2
+    ports:
+      - 2182:2181
+    volumes:
+      - ./tmp/zoo-2/conf:/conf
+      - ./tmp/zoo-2/data:/data
+      - ./tmp/zoo-2/datalog:/datalog
+      - ./tmp/zoo-2/logs:/logs
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+
+  zoo3:
+    <<: *zoo
+    hostname: zoo3
+    ports:
+      - 2183:2181
+    volumes:
+      - ./tmp/zoo-3/conf:/conf
+      - ./tmp/zoo-3/data:/data
+      - ./tmp/zoo-3/datalog:/datalog
+      - ./tmp/zoo-3/logs:/logs
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+
+  # Docker dashboard
+  portainer:
+    image: portainer/portainer
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 9000:9000
+    links:
+      - zoo1
+      - zoo2
+      - zoo3
+      - solr1
+      - solr2
