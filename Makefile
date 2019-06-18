@@ -3,6 +3,9 @@ DC  = docker-compose
 build:
 	$(DC) build
 
+bash-client:
+	docker exec -it `docker-compose ps -q client` bash
+
 bash-solr1:
 	docker exec -it `docker-compose ps -q solr1` bash
 bash-solr2:
@@ -20,20 +23,20 @@ up: clean
 	#$(DC) run --rm -p 8983:8983 solr bash -c "/opt/solr/bin/solr start -h 0.0.0.0 -force && bash"
 
 start-solr:
-	${SOLR}/bin/solr start -cloud -h `hostname` -p 8983 -d ${SOLR}/server -z zoo1:2181,zoo2:2181,zoo3:2181/solr -s ${SOLR}/server/solr_8_5_node -force
+	/opt/solr/bin/solr start -cloud -h `hostname` -p 8983 -d /opt/solr/server -z zoo1:2181,zoo2:2181,zoo3:2181/solr -s /opt/solr/server/solr_8_5_node -force
 
 stop-solr:
 	${SOLR}/bin/solr stop -all
 
 init-zoo:
-	${SOLR}/bin/solr zk mkroot /solr -z zoo1:2181,zoo2:2181,zoo3:2181
+	/opt/solr/bin/solr zk mkroot /solr -z zoo1:2181,zoo2:2181,zoo3:2181
 
 upconfig:
-	chmod +x ${SOLR}/server/scripts/cloud-scripts/zkcli.sh
-	${SOLR}/server/scripts/cloud-scripts/zkcli.sh -zkhost zoo1:2181,zoo2:2181,zoo3:2181/solr -cmd upconfig -confdir /home/solr/conf -confname ch08_solrcloud_configs
+	chmod +x /opt/solr/server/scripts/cloud-scripts/zkcli.sh
+	/opt/solr/server/scripts/cloud-scripts/zkcli.sh -zkhost zoo1:2181,zoo2:2181,zoo3:2181/solr -cmd upconfig -confdir /home/solr/conf -confname ch08_solrcloud_configs
 
 index-1:
-	${SOLR}/bin/post -host solr1 -p 8983 -c ch08_solrcloud_cluster ${SOLR}/example/exampledocs/[a-m]*.xml
+	/opt/solr/bin/post -host solr1 -p 8983 -c ch08_solrcloud_cluster /opt/solr/example/exampledocs/[a-m]*.xml
 
 down:
 	$(DC) down
@@ -50,8 +53,10 @@ search-2:
 	curl -s "http://localhost:8984/solr/ch08_solrcloud_cluster/select?q=*:*&shards.info=true&indent=true&wt=json" | jq -r ".response.numFound"
 
 create-collection:
-	${SOLR}/bin/solr create -c ch08_solrcloud_cluster -n ch08_solrcloud_configs -d /home/solr/conf -shards 1 -replicationFactor 2 -force
-	#${SOLR}/bin/solr create -c ch08_solrcloud_cluster -n ch08_solrcloud_configs -shards 1 -replicationFactor 2 -force
+	/opt/solr/bin/solr create -c ch08_solrcloud_cluster -n ch08_solrcloud_configs -d /home/solr/conf -shards 1 -replicationFactor 2 -force
 
 delete-collection:
-	${SOLR}/bin/solr delete -c ch08_solrcloud_cluster
+	/opt/solr/bin/solr delete -c ch08_solrcloud_cluster
+
+exec-client:
+	$(DC) exec client bash -c "bundle exec ruby client.rb"
