@@ -1,4 +1,5 @@
-FROM solr:6.6.6-slim
+#FROM solr:6.6.6-slim
+FROM solr:8.1.1-slim
 
 USER "root"
 RUN apt-get update \

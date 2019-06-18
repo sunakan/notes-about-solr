@@ -1,1 +1,28 @@
 = Notes about solr
+
+----
+# コンソール0
+$ make up
+
+# コンソール1
+$ make bash-solr1
+$ make init-zoo
+$ make start-solr
+
+# コンソール2
+$ make bash-solr2
+$ make start-solr
+
+# コンソール1
+$ make create-collection
+
+# コンソール1
+$ make index-1
+
+# コンソール0(1つしかindexしてないのにレプリケーション済み!!)
+$ make search-1
+$ make search-2
+----
+
+* ZooKeeperを使ってないので、まだ威力を発揮できてない
+* SolrJを使ってClientをLet's実装

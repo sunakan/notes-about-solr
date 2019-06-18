@@ -1,11 +1,13 @@
+---
+
 version: "3.7"
 
 x-solr-template: &solr
   working_dir: /app
-  user: "solr"
+  user: "root"
   command: bash
   tty: true
-  image: my-solr6
+  image: my-solr:8
   build:
     context: .
     dockerfile: ./containers/solr/Dockerfile
@@ -21,17 +23,24 @@ x-solr-template: &solr
     - zoo3
 
 x-zoo-template: &zoo
-  image: zookeeper:3.4.14
-  restart: always
+  image: my-zoo:3.5
+  build:
+    context: .
+    dockerfile: ./containers/zookeeper/Dockerfile
+  #restart: always
 
 services:
   solr1:
     <<: *solr
+    hostname: solr1
     ports:
       - 8983:8983
+    links:
+      - solr2
 
   solr2:
     <<: *solr
+    hostname: solr2
     ports:
       - 8984:8983
 
@@ -47,7 +56,7 @@ services:
       - ./tmp/zoo-1/logs:/logs
     environment:
       ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
 
   zoo2:
     <<: *zoo
@@ -61,7 +70,7 @@ services:
       - ./tmp/zoo-2/logs:/logs
     environment:
       ZOO_MY_ID: 2
-      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
 
   zoo3:
     <<: *zoo
@@ -75,19 +84,4 @@ services:
       - ./tmp/zoo-3/logs:/logs
     environment:
       ZOO_MY_ID: 3
-      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
-
-  # Docker dashboard
-  portainer:
-    image: portainer/portainer
-    command: -H unix:///var/run/docker.sock
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 9000:9000
-    links:
-      - zoo1
-      - zoo2
-      - zoo3
-      - solr1
-      - solr2
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
