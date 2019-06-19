@@ -32,7 +32,9 @@ x-zoo-template: &zoo
 services:
   client:
     working_dir: /client
-    image: ruby:2.7-rc-slim
+    build:
+      context: .
+      dockerfile: ./containers/client/Dockerfile
     command: bash
     tty: true
     volumes:
