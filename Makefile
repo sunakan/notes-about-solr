@@ -5,6 +5,8 @@ build:
 
 bash-client:
 	docker exec -it `docker-compose ps -q client` bash
+run-client:
+	docker-compose run --rm client bash -c "bundle exec ruby client.rb"
 
 bash-solr1:
 	docker exec -it `docker-compose ps -q solr1` bash

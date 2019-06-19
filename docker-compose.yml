@@ -39,8 +39,8 @@ services:
     tty: true
     volumes:
       - ./:/client
-    environment:
-      - BUNDLE_PATH=vendor/bundle
+        #    environment:
+        #      - BUNDLE_PATH=vendor/bundle
     links:
       - zoo1
       - zoo2
