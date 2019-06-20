@@ -33,20 +33,20 @@ services:
   client:
     working_dir: /client
     build:
-      context: .
-      dockerfile: ./containers/client/Dockerfile
+      context: ./containers/client/
+      dockerfile: Dockerfile
     command: bash
     tty: true
     volumes:
-      - ./:/client
-        #    environment:
-        #      - BUNDLE_PATH=vendor/bundle
-    links:
-      - zoo1
-      - zoo2
-      - zoo3
-      - solr1
-      - solr2
+      - ./containers/client:/client
+#    environment:
+#      - BUNDLE_PATH=vendor/bundle
+#    links:
+#      - zoo1
+#      - zoo2
+#      - zoo3
+#      - solr1
+#      - solr2
 
   solr1:
     <<: *solr

@@ -1,0 +1,12 @@
+### Rails ###
+
+public/assets/*
+config/master.key
+coverage
+log/*
+tmp
+
+## Environment normalisation:
+
+.bundle
+vendor/bundle

@@ -8,3 +8,5 @@ RUN apt-get update \
 COPY Gemfile* ./
 RUN gem install bundler \
   && bundle install -j4
+
+COPY . ./
