@@ -21,7 +21,7 @@ bash-zoo3:
 	docker exec -it `docker-compose ps -q zoo3` bash
 
 up: clean
-	$(DC) up -d
+	$(DC) up -d solr1
 	#$(DC) run --rm -p 8983:8983 solr bash -c "/opt/solr/bin/solr start -h 0.0.0.0 -force && bash"
 
 start-solr:
