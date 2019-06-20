@@ -12,6 +12,10 @@ bash-solr1:
 	docker exec -it `docker-compose ps -q solr1` bash
 bash-solr2:
 	docker exec -it `docker-compose ps -q solr2` bash
+bash-solr3:
+	docker exec -it `docker-compose ps -q solr3` bash
+bash-solr4:
+	docker exec -it `docker-compose ps -q solr4` bash
 
 bash-zoo1:
 	docker exec -it `docker-compose ps -q zoo1` bash

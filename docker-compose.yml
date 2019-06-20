@@ -3,7 +3,7 @@
 version: "3.7"
 
 x-solr-template: &solr
-  working_dir: /app
+  working_dir: /home/solr
   user: "root"
   command: bash
   tty: true
@@ -14,7 +14,7 @@ x-solr-template: &solr
   ports:
     - 8983
   volumes:
-    - ./:/app
+    - ./Makefile:/home/solr/Makefile
   environment:
     - SOLR=/opt/solr
   links:
@@ -39,8 +39,8 @@ services:
     tty: true
     volumes:
       - ./containers/client:/client
-#    environment:
-#      - BUNDLE_PATH=vendor/bundle
+    environment:
+      - BUNDLE_PATH=vendor/bundle
     links:
       - zoo1
       - zoo2
@@ -58,12 +58,24 @@ services:
       - zoo2
       - zoo3
       - solr2
+      - solr3
+      - solr4
 
   solr2:
     <<: *solr
     hostname: solr2
     ports:
       - 8984:8983
+  solr3:
+    <<: *solr
+    hostname: solr3
+    ports:
+      - 8985:8983
+  solr4:
+    <<: *solr
+    hostname: solr4
+    ports:
+      - 8986:8983
 
   zoo1:
     <<: *zoo
