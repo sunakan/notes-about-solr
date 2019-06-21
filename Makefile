@@ -63,6 +63,3 @@ create-collection:
 
 delete-collection:
 	/opt/solr/bin/solr delete -c ch08_solrcloud_cluster
-
-exec-client:
-	$(DC) exec client bash -c "bundle exec ruby client.rb"

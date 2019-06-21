@@ -1,27 +1,21 @@
-class SolrApi::V1Controller < ApplicationController
-# Solr::Cloud::HelperMethods
-# - cloud_active_nodes_for
-# - leader_replica_node_for
-# - shards_for
-# - cloud_enabled?
-# - enable_solr_cloud?
-# - enable_solr_cloud!
+# frozen_string_literal: true
 
+class SolrApi::V1Controller < ApplicationController
   def select
-    collection_name  = "ch08_solrcloud_cluster"
-    #collection_state = Solr.get_collection_state(collection_name)
-    puts "====================="
-    pp Solr.cloud_enabled?
-    puts "====================="
-    pp Solr.configuration.cloud_configuration
-    puts "====================="
-    render json: {a: "ok"}
+    url        = "#{target_node}/ch08_solrcloud_cluster/select"
+    solr_query = params.permit!.to_h.except(:action, :controller)
+    response = JSON.parse(Faraday.get(url, solr_query).body)
+    render json: response
   end
 
-#  private
-#  def zk
-#    require "solr"
-#    zookeeper_url = "zoo1:2181,zoo2:2181,zoo3:2181/solr"
-#    @@zk ||= Solr::Cloud::ZookeeperConnection.new(zookeeper_url: zookeeper_url)
-#  end
+  private
+
+  def target_node
+    collection_name = 'ch08_solrcloud_cluster'
+    nodes       = Solr.active_nodes_for(collection: collection_name)
+    shards      = Solr.shards_for(collection: collection_name)
+    leaders     = shards.map { |shard| Solr.leader_replica_node_for(collection: collection_name, shard: shard) }
+    non_leaders = nodes.select { |node| leaders.exclude?(node) }
+    target_node = non_leaders.sample || leaders.sample
+  end
 end

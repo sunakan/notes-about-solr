@@ -23,10 +23,11 @@ x-solr-template: &solr
     - zoo3
 
 x-zoo-template: &zoo
-  image: my-zoo:3.5
-  build:
-    context: .
-    dockerfile: ./containers/zookeeper/Dockerfile
+  image: zookeeper:3.4.13
+  #image: my-zoo:3.5
+  #build:
+  #  context: .
+  #  dockerfile: ./containers/zookeeper/Dockerfile
   #restart: always
 
 services:
@@ -47,6 +48,8 @@ services:
       - zoo3
       - solr1
       - solr2
+      - solr3
+      - solr4
 
   solr1:
     <<: *solr
@@ -89,7 +92,8 @@ services:
       - ./tmp/zoo-1/logs:/logs
     environment:
       ZOO_MY_ID: 1
-      ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+      #ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
 
   zoo2:
     <<: *zoo
@@ -103,7 +107,8 @@ services:
       - ./tmp/zoo-2/logs:/logs
     environment:
       ZOO_MY_ID: 2
-      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+      #ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=0.0.0.0:2888:3888;2181 server.3=zoo3:2888:3888;2181
 
   zoo3:
     <<: *zoo
@@ -117,4 +122,5 @@ services:
       - ./tmp/zoo-3/logs:/logs
     environment:
       ZOO_MY_ID: 3
-      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181
+      ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+      #ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=0.0.0.0:2888:3888;2181

@@ -1,10 +1,8 @@
-require "solr"
-config = Solr.configure do |config|
-  config.zookeeper_url = ["zoo1:2181", "zoo2:2181", "zoo3:2181"]
-end
+# frozen_string_literal: true
 
-puts "=========================================="
-p config
-puts "=========================================="
-#collections = ["ch08_solrcloud_cluster"]
-#Solr.enable_solr_cloud!(collections: collections)
+require 'solr'
+Solr.configure do |config|
+  config.zookeeper_url = 'zoo1:2181,zoo2:2181,zoo3:2181/solr'
+end
+collection_name = 'ch08_solrcloud_cluster'
+Solr.configuration.cloud_configuration.enable_solr_cloud!([collection_name])

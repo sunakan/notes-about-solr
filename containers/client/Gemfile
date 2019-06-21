@@ -1,17 +1,19 @@
-source "https://rubygems.org"
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby "2.6.3"
+ruby '2.6.3'
 
-gem "rails", "~> 6.0.0.rc1"
-gem "puma", "~> 3.11"
-gem "bootsnap", ">= 1.4.2", require: false
+gem 'bootsnap', '>= 1.4.2', require: false
+gem 'puma', '~> 3.11'
+gem 'rails', '~> 6.0.0.rc1'
 
 group :development do
-  gem "onkcop"
-  gem "rubocop", "0.67"
-  #gem "rubocop-rails"
+  gem 'onkcop'
+  gem 'rubocop', '0.67'
+  # gem "rubocop-rails"
 end
 
-gem "zk"
-gem "solrb"
+gem 'solrb'
+gem 'zk'
