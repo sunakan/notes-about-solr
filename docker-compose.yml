@@ -44,6 +44,8 @@ services:
       - BUNDLE_PATH=vendor/bundle
       - COLLECTION_NAME=ch08_solrcloud_cluster
       - ZOOKEEPER_URL=zoo1:2181,zoo2:2181,zoo3:2181/solr
+    ports:
+      - 3001:3000
     links:
       - zoo1
       - zoo2
