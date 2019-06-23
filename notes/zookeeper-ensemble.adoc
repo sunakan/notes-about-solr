@@ -1,0 +1,290 @@
+= ZooKeeper ensemble
+
+== ZooKeeperの基本
+
+* データツリーと呼ばれるファイルシステムのような階層的なツリー構造を構成
+* ツリー構造の各ノードはznodeと呼ばれる
+* 各znodeノードの名前は、スラッシュで区切られるパス要素によって識別される
+* *各znodeにはデータを格納することができる*
+** データはバイト配列として格納される
+** 多くのアプリではprotocolBuffersやMessagePack等をのシリアライズを行うためのパッケージを利用してデータを格納することが多い
+
+== znodeのモード
+
+* znodeにはモードがある
+* モードで古いが変わる
+** PERSISTENT(関係者)
+** EPHEMERAL(儚い)
+** CONTAINER(容器)
+** PERSISTENT_TTL(関係者_TimeToLive(寿命))
+
+* PERSISTENT(関係者)
+** 永続化ノード
+** 削除するにはAPIを叩く必要がある
+** アプリに関わるデータを保持する
+** ノードを作成したプロセスがクラッシュ/終了した場合でもデータを保持しなければならない場合に利用
+
+* EPHEMERAL
+** 一時的なノード
+** ノードを作製したセッションが維持される間だけ存在するアプリ情報データを格納する場合に利用
+*** 具体的にマスタ・ワーカアーキテクチャ型のシステムにおけるマスタ情報等
+** マスタはEPHEMERALなノードを作製しておくことで、マスタの生存を対象のノードが存在するかどうかのチェックが可能
+
+* CONTAINER
+** 3.5.1からある
+** ガベージコレクション機能を持つ
+** CONTAINERなノードの子ノードがなくなると、ZooKeeperによって対象ノードは自動的に削除される
+** クラスタに参加するノード情報をCONTAINERなノードの子のEPHEMERAノードとして管理しておき、対象のクラスター全体を終了した場合などに、クラスタ情報全体を削除するといった利用方法が考えられる
+
+* PERSISTENT_TTL
+** 3.5.3からある
+** 期限付きの一時ノード
+** TTLなノードを利用することによって、タイムアウトをもつセッション情報を管理可能
+
+== znodeの監視と通知
+
+* znodeの存在の有無や、データの変更などデータツリー状態をチェックするために、毎回クライアントがアクセスを行うことを考えると、ZooKeeperに対して負荷がかかる
+* ポーリングしなくてもいいようにしたい
+* データ変更をクライアントに対して通知する機構がある
+* クライアントは特定のznodeに対して変更などを通知してもらうために、watcherの設定を行う必要がある
+* 注）設定されたwatcherは1度しか通知が行われない
+** もし何度も通知を受けたいのなら、通知を受け取った後、もう一度監視を登録する必要がある
+** 問題点：再登録中に監視対象のznodeに対して変更があった時
+*** 監視を設定したときのznodeの状態も取得可能なので、設定時にznodeの状態を見ることで、対象のznodeの状態が変更されているかをチェック可能
+
+== ここまで
+* ZooKeeperではあくまで分散システムの協調動作を実現するための基本機能の実装しかない
+* 制御のためのロジックを実装するのはアプリ側の役割
+
+== ZooKeeperのデータ構造
+
+.apache-zookeeper-3.5.5/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataNode.java
+----
+ 40 @SuppressFBWarnings("EI_EXPOSE_REP2")
+ 41 public class DataNode implements Record {
+ 42     /** the data for this datanode */
+ 43     byte data[];
+ 44
+ 45     /**
+ 46      * the acl map long for this datanode. the datatree has the map
+ 47      */
+ 48     Long acl;
+ 49
+ 50     /**
+ 51      * the stat for this node that is persisted to disk.
+ 52      */
+ 53     public StatPersisted stat;
+ 54
+ 55     /**
+ 56      * the list of children for this node. note that the list of children string
+ 57      * does not contain the parent path -- just the last part of the path. This
+ 58      * should be synchronized on except deserializing (for speed up issues).
+ 59      */
+ 60     private Set<String> children = null
+----
+
+* `data` はcreateやsetコマンドで指定するznodeのデータを保持
+* `acl` は権限情報
+* `chilldren` は対象のznodeの子ノードを保持する
+** 子ノードは `Set<String>`
+** 例： `/parent` 、 `/parent/child1` , `/parent/child2` とznodeがある場合
+** `/parent` DataNodeのインスタンスの `children` 変数には"child1", "child2"が格納される
+
+.apache-zookeeper-3.5.5/zookeeper-jute/src/main/resources/zookeeper.jute
+----
+ 28     // information shared with the client
+ 29     class Stat {
+ 30         long czxid;      // created zxid
+ 31         long mzxid;      // last modified zxid
+ 32         long ctime;      // created
+ 33         long mtime;      // last modified
+ 34         int version;     // version
+ 35         int cversion;    // child version
+ 36         int aversion;    // acl version
+ 37         long ephemeralOwner; // owner id if ephemeral, 0 otw
+ 38         int dataLength;  //length of the data in the node
+ 39         int numChildren; //number of children of this node
+ 40         long pzxid;      // last modified children
+ 41     }
+ 42     // information explicitly stored by the server persistently
+ 43     class StatPersisted {
+ 44         long czxid;      // created zxid
+ 45         long mzxid;      // last modified zxid
+ 46         long ctime;      // created
+ 47         long mtime;      // last modified
+ 48         int version;     // version
+ 49         int cversion;    // child version
+ 50         int aversion;    // acl version
+ 51         long ephemeralOwner; // owner id if ephemeral, 0 otw
+ 52         long pzxid;      // last modified children
+ 53     }
+----
+
+* StatPersistedでは主にノードに関してのバージョン情報
+* ZooKeeperトランザクションID(ZXID)に関する情報を保持する
+
+.apache-zookeeper-3.5.5/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java
+----
+  79 public class DataTree {
+  80     private static final Logger LOG = LoggerFactory.getLogger(DataTree.class);
+  81
+  82     /**
+  83      * This hashtable provides a fast lookup to the datanodes. The tree is the
+  84      * source of truth and is where all the locking occurs
+  85      */
+  86     private final ConcurrentHashMap<String, DataNode> nodes =
+  87         new ConcurrentHashMap<String, DataNode>();
+  88
+  89     private final WatchManager dataWatches = new WatchManager();
+  90
+  91     private final WatchManager childWatches = new WatchManager();
+  92
+  93     /** the root of zookeeper tree */
+  94     private static final String rootZookeeper = "/";
+  95
+  96     /** the zookeeper nodes that acts as the management and status node **/
+  97     private static final String procZookeeper = Quotas.procZookeeper;
+  98
+  99     /** this will be the string thats stored as a child of root */
+ 100     private static final String procChildZookeeper = procZookeeper.substring(1);
+ 101
+ 102     /**
+ 103      * the zookeeper quota node that acts as the quota management node for
+ 104      * zookeeper
+ 105      */
+ 106     private static final String quotaZookeeper = Quotas.quotaZookeeper;
+ 107
+ 108     /** this will be the string thats stored as a child of /zookeeper */
+ 109     private static final String quotaChildZookeeper = quotaZookeeper
+ 110             .substring(procZookeeper.length() + 1);
+ 111
+ 112     /**
+ 113      * the zookeeper config node that acts as the config management node for
+ 114      * zookeeper
+ 115      */
+ 116     private static final String configZookeeper = ZooDefs.CONFIG_NODE;
+ 117
+ 118     /** this will be the string thats stored as a child of /zookeeper */
+ 119     private static final String configChildZookeeper = configZookeeper
+ 120             .substring(procZookeeper.length() + 1)
+ 121
+ 122     /**
+ 123      * the path trie that keeps track fo the quota nodes in this datatree
+ 124      */
+ 125     private final PathTrie pTrie = new PathTrie();
+ 126
+ 127     /**
+ 128      * This hashtable lists the paths of the ephemeral nodes of a session.
+ 129      */
+ 130     private final Map<Long, HashSet<String>> ephemerals =
+ 131         new ConcurrentHashMap<Long, HashSet<String>>();
+ 132
+ 133     /**
+ 134      * This set contains the paths of all container nodes
+ 135      */
+ 136     private final Set<String> containers =
+ 137             Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+ 138
+ 139     /**
+ 140      * This set contains the paths of all ttl nodes
+ 141      */
+ 142     private final Set<String> ttls =
+ 143             Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+----
+
+==== nodes
+
+----
+  86     private final ConcurrentHashMap<String, DataNode> nodes =
+  87         new ConcurrentHashMap<String, DataNode>();
+----
+
+* `nodes` はデータツリーが管理する全てのznodeの情報を格納
+* データツリーはツリーではなく、HashMapによる完全フラット
+** "/", "/znookeeper", "/zookeeper/config", "/zookeeper/quota" というStringのkeys
+
+==== ephemerals
+
+----
+ 130     private final Map<Long, HashSet<String>> ephemerals =
+ 131         new ConcurrentHashMap<Long, HashSet<String>>();
+----
+
+* `ephemerals` ではEPHEMERALモードのznodeを管理する
+* `Map<Long, HashSet<String>>` 構造
+* KeyでセッションIDを管理
+* Valueで対象のセッションに紐づくEPHEMERALノードパスを管理
+* セッションが切れた時、削除するべきEPHEMERALノードを簡単に参照可能
+
+.apache-zookeeper-3.5.5/zookeeper-server/src/main/java/org/apache/zookeeper/server/DataTree.java
+----
+1038     void killSession(long session, long zxid) {
+1039         // the list is already removed from the ephemerals
+1040         // so we do not have to worry about synchronizing on
+1041         // the list. This is only called from FinalRequestProcessor
+1042         // so there is no need for synchronization. The list is not
+1043         // changed here. Only create and delete change the list which
+1044         // are again called from FinalRequestProcessor in sequence.
+1045         HashSet<String> list = ephemerals.remove(session);
+1046         if (list != null) {
+1047             for (String path : list) {
+1048                 try {
+1049                     deleteNode(path, zxid);
+1050                     if (LOG.isDebugEnabled()) {
+1051                         LOG
+1052                                 .debug("Deleting ephemeral node " + path
+1053                                         + " for session 0x"
+1054                                         + Long.toHexString(session));
+1055                     }
+1056                 } catch (NoNodeException e) {
+1057                     LOG.warn("Ignoring NoNodeException for path " + path
+1058                             + " while removing ephemeral for dead session 0x"
+1059                             + Long.toHexString(session));
+1060                 }
+1061             }
+1062         }
+1063     }
+----
+
+* 1045行目で、切断対象のHashSet<String>を取得していることがわかる
+
+==== containers
+
+----
+ 136     private final Set<String> containers =
+ 137             Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+----
+
+* CONTAINERモードのznodeのパスを管理
+
+==== ttls
+
+----
+ 142     private final Set<String> ttls =
+ 143             Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+----
+
+* TTLモードのznodeのパスを管理
+
+==== zxid
+
+* ZooKeeperはもともと、複数サーバにて分散して動作するように設計
+* 各サーバが協調して動作するように、更にはデータノードを定期的に永続化をする際に、データの整合性を保つために *zxid(ZooKeeperトランザクションID)* を利用する
+* スタンドアロン
+** ノードの追加やデータ更新を行うたびに、シーケンシャルに増加する値としてzxid
+
+----
+[zk: localhost:2181(CONNECTED) 11] get -s /test
+hogehoge
+cZxid = 0x20                         # znodeを作製した時のzxid
+ctime = Sun Jun 23 13:21:50 UTC 2019 # 作製した時のシステム時間
+mZxid = 0x21                         # 最終更新された時のzxid
+mtime = Sun Jun 23 13:23:57 UTC 2019 # 最終更新した時のシステム時間
+pZxid = 0x20                         # 子ノード(not孫)を最終更新したzxid
+cversion = 0                         # 子ノード(not孫)のバージョン番号(子ノードが変更されるたびにバージョン番号が変更される)
+dataVersion = 1                      # znodeに格納するデータのバージョン(このdataVersionを比較することに寄って、他のクライアントが対象データの書き換えを行ったかをチェック可能)
+aclVersion = 0                       # データノードに設定されているアクセス権のバージョンを示す値
+ephemeralOwner = 0x0                 # EPHEMERALモードのデータノードに対してセッションIDを格納のために利用される(特定のクライアントのセッションが切断された時に、対象のセッションIDとEPHEMERALモードのデータノードに格納されているephemeralOwnerっを比較して一致したら、そのデータノードを削除)
+dataLength = 8                       # 格納されているデータのバイト数
+numChildren = 0                      # 子ノードの個数
+----
