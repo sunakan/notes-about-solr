@@ -5,8 +5,6 @@ build:
 
 bash-client:
 	docker exec -it `docker-compose ps -q client` bash
-run-client:
-	docker-compose run --rm client bash -c "bundle exec ruby client.rb"
 
 bash-solr1:
 	docker exec -it `docker-compose ps -q solr1` bash
@@ -24,9 +22,14 @@ bash-zoo2:
 bash-zoo3:
 	docker exec -it `docker-compose ps -q zoo3` bash
 
+bash-solr-single:
+	docker exec -it `docker-compose -f docker-compose.single.yml ps -q solr_single` bash
+
 up: clean
 	$(DC) up -d solr1
 	#$(DC) run --rm -p 8983:8983 solr bash -c "/opt/solr/bin/solr start -h 0.0.0.0 -force && bash"
+up-single: clean
+	$(DC) -f docker-compose.single.yml up -d solr_single
 
 start-solr:
 	/opt/solr/bin/solr start -cloud -h `hostname` -p 8983 -d /opt/solr/server -z zoo1:2181,zoo2:2181,zoo3:2181/solr -s /opt/solr/server/solr_8_5_node -force
@@ -46,6 +49,7 @@ index-1:
 
 down:
 	$(DC) down
+	$(DC) -f docker-compose.single.yml down
 
 chown:
 	sudo chown -R ${USER}:${USER} .

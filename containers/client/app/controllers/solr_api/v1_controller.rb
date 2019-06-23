@@ -11,7 +11,7 @@ class SolrApi::V1Controller < ApplicationController
   private
 
   def target_node
-    collection_name = 'ch08_solrcloud_cluster'
+    collection_name = ENV['COLLECTION_NAME']
     nodes       = Solr.active_nodes_for(collection: collection_name)
     shards      = Solr.shards_for(collection: collection_name)
     leaders     = shards.map { |shard| Solr.leader_replica_node_for(collection: collection_name, shard: shard) }

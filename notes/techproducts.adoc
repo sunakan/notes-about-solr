@@ -1,0 +1,71 @@
+== bin/solr start -e techproducts
+
+----
+...
+Starting up Solr on port 8983 using command:
+"bin/solr" start -p 8983 -s "example/techproducts/solr" -force
+
+Waiting up to 180 seconds to see Solr running on port 8983 [/]
+Started Solr server on port 8983 (pid=206). Happy searching!
+...
+----
+
+* SOLR_HOMEは -sオプションで指定した `/opt/solr-8.1.1/example/techproducts/solr`
++
+----
+/opt/solr-8.1.1/example/techproducts/solr/
+├ lib                 # サードパーティライブラリや独自に開発したSolrプラグインJARファイルを配置すると、Solrの起動時にクラスローダによってロードされる
+├ solr.xml
+├ techproducts        # コア
+│   ├ conf            # コアの初期化時に1度読み込まれる(ブラウザでコアのreloadが可能)
+│   ├ core.properties # コア名が載ってる
+│   └ data
+└ zoo.cfg
+----
+
+
+* コアの詳細(上のtreeの細かい版)
++
+----
+/opt/solr-8.1.1/example/techproducts/solr/techproducts/solr/
+├ lib
+├ conf
+│   ├ _rest_managed.json
+│   ├ _schema_analysis_stopwords_english.json
+│   ├ _schema_analysis_synonyms_english.json
+│   ├ clustering
+│   ├ currency.xml
+│   ├ elevate.xml
+│   ├ lang
+│   ├ managed-schema   # インデックススキーマ定義ファイル
+│   ├ mapping-FoldToASCII.txt
+│   ├ mapping-ISOLatin1Accent.txt
+│   ├ params.json      #
+│   ├ protwords.txt    #
+│   ├ solrconfig.xml   # コアの構成を管理するファイル
+│   ├ spellings.txt    #
+│   ├ stopwords.txt    #
+│   ├ synonyms.txt     #
+│   ├ update-script.js #
+│   ├ velocity         #
+│   └ xslt             #
+├ core.properties
+└ data
+    ├ index
+    ├ snapshot_metadata
+    └ tlog
+----
+
+* コアディレクトリのみ絞って(マルチコア)
++
+----
+/opt/solr-8.1.1/example/techproducts/solr/
+├ コア1
+├ コア2
+├ コア3
+├ コア4
+└ コア5
+----
+
+* SolrCloudだとコアという考え方 = コレクション
+** In SolrCloud each of your Core will become a Collection.

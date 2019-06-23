@@ -1,0 +1,24 @@
+---
+
+version: "3.7"
+
+services:
+  solr_single:
+    working_dir: /opt/solr
+    user: "root"
+    command: bash
+    tty: true
+    image: my-solr:8
+    build:
+      context: .
+      dockerfile: ./containers/solr/Dockerfile
+    ports:
+      - 8983:8983
+    volumes:
+      - ./Makefile:/opt/solr/Makefile
+    environment:
+      - SOLR=/opt/solr
+
+networks:
+  default:
+    name: single-solr

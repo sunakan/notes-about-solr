@@ -42,6 +42,8 @@ services:
       - ./containers/client:/client
     environment:
       - BUNDLE_PATH=vendor/bundle
+      - COLLECTION_NAME=ch08_solrcloud_cluster
+      - ZOOKEEPER_URL=zoo1:2181,zoo2:2181,zoo3:2181/solr
     links:
       - zoo1
       - zoo2
