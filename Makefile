@@ -4,7 +4,7 @@ build:
 	$(DC) build
 
 bash-client:
-	docker exec -it `docker-compose ps -q client` bash
+	docker-compose run --rm -p 3001:3000 client bash
 
 bash-solr1:
 	docker exec -it `docker-compose ps -q solr1` bash
@@ -25,9 +25,10 @@ bash-zoo3:
 bash-solr-single:
 	docker exec -it `docker-compose -f docker-compose.single.yml ps -q solr_single` bash
 
-up: clean
+up:
 	$(DC) up -d solr1
 	#$(DC) run --rm -p 8983:8983 solr bash -c "/opt/solr/bin/solr start -h 0.0.0.0 -force && bash"
+
 up-single: clean
 	$(DC) -f docker-compose.single.yml up -d solr_single
 
@@ -67,3 +68,6 @@ create-collection:
 
 delete-collection:
 	/opt/solr/bin/solr delete -c ch08_solrcloud_cluster
+
+zoo:
+	docker-compose up -d zoo1

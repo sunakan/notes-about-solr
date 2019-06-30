@@ -23,7 +23,7 @@ x-solr-template: &solr
     - zoo3
 
 x-zoo-template: &zoo
-  image: zookeeper:3.4.13
+  image: zookeeper:3.4.14
   #image: my-zoo:3.5
   #build:
   #  context: .
@@ -98,6 +98,10 @@ services:
       ZOO_MY_ID: 1
       ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
       #ZOO_SERVERS: server.1=0.0.0.0:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+    links:
+      - zoo2
+      - zoo3
+
 
   zoo2:
     <<: *zoo
